@@ -89,6 +89,9 @@ def next_batch(dataset_name, batch_size, shortside_len, is_training):
 
     img_name, img, gtboxes_and_label, num_obs = read_and_prepocess_single_img(filename_queue, shortside_len,
                                                                               is_training=is_training)
+
+
+    #after process the single image , we will construct a pipeline to read all batch of images.
     img_name_batch, img_batch, gtboxes_and_label_batch, num_obs_batch = \
         tf.train.batch(
                        [img_name, img, gtboxes_and_label, num_obs],

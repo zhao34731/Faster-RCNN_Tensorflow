@@ -18,7 +18,7 @@ from help_utils import tools
 
 
 os.environ["CUDA_VISIBLE_DEVICES"] = cfgs.GPU_GROUP
-
+#get environment parameters
 
 def train():
 
@@ -29,7 +29,7 @@ def train():
         img_name_batch, img_batch, gtboxes_and_label_batch, num_objects_batch = \
             next_batch(dataset_name=cfgs.DATASET_NAME,  # 'pascal', 'coco'
                        batch_size=cfgs.BATCH_SIZE,
-                       shortside_len=cfgs.IMG_SHORT_SIDE_LEN,
+                       shortside_len=cfgs.IMG_SHORT_SIDE_LEN,  #get shortside_lens of images
                        is_training=True)
         gtboxes_and_label = tf.reshape(gtboxes_and_label_batch, [-1, 5])
 
@@ -42,16 +42,18 @@ def train():
                         weights_regularizer=weights_regularizer,
                         biases_regularizer=biases_regularizer,
                         biases_initializer=tf.constant_initializer(0.0)):
+        #here different layers have same initializion
         final_bbox, final_scores, final_category, loss_dict = faster_rcnn.build_whole_detection_network(
             input_img_batch=img_batch,
             gtboxes_batch=gtboxes_and_label)
+        # it will return fianl_bbox ,final_scores ,final_category and a loss_dict contained many different types of loss
 
     # ----------------------------------------------------------------------------------------------------build loss
     # weight_decay_loss = tf.add_n(slim.losses.get_regularization_losses())
     # weight_decay_loss = tf.add_n(tf.losses.get_regularization_losses())
     rpn_location_loss = loss_dict['rpn_loc_loss']
     rpn_cls_loss = loss_dict['rpn_cls_loss']
-    rpn_total_loss = rpn_location_loss + rpn_cls_loss
+    rpn_total_loss = rpn_location_loss + rpn_cls_loss   #cls loss + reg loss
 
     fastrcnn_cls_loss = loss_dict['fastrcnn_cls_loss']
     fastrcnn_loc_loss = loss_dict['fastrcnn_loc_loss']
@@ -88,9 +90,11 @@ def train():
     # ___________________________________________________________________________________________________add summary
 
     global_step = slim.get_or_create_global_step()
+    #slim.get... to return global steps numbers
     lr = tf.train.piecewise_constant(global_step,
                                      boundaries=[np.int64(cfgs.DECAY_STEP[0]), np.int64(cfgs.DECAY_STEP[1])],
                                      values=[cfgs.LR, cfgs.LR / 10., cfgs.LR / 100.])
+    #when in different step ,it will change learning rate
     tf.summary.scalar('lr', lr)
     optimizer = tf.train.MomentumOptimizer(lr, momentum=cfgs.MOMENTUM)
 
@@ -107,7 +111,7 @@ def train():
                                                           cfgs.GRADIENT_CLIPPING_BY_NORM)
     # _____________________________________________________________________________________________compute gradients
 
-
+    # _____________________________________________________________________________________________train process
     # train_op
     train_op = optimizer.apply_gradients(grads_and_vars=gradients,
                                          global_step=global_step)
@@ -121,13 +125,17 @@ def train():
     saver = tf.train.Saver(max_to_keep=30)
 
     config = tf.ConfigProto()
+    #tf.ConfigProto is used to config parameters for current session
     config.gpu_options.allow_growth = True
+
 
     with tf.Session(config=config) as sess:
         sess.run(init_op)
         if not restorer is None:
             restorer.restore(sess, restore_ckpt)
             print('restore model')
+
+
         coord = tf.train.Coordinator()
         threads = tf.train.start_queue_runners(sess, coord)
 
@@ -167,6 +175,7 @@ def train():
                         summary_writer.add_summary(summary_str, global_stepnp)
                         summary_writer.flush()
 
+            #write ckpt
             if (step > 0 and step % cfgs.SAVE_WEIGHTS_INTE == 0) or (step == cfgs.MAX_ITERATION - 1):
 
                 save_dir = os.path.join(cfgs.TRAINED_CKPT, cfgs.VERSION)

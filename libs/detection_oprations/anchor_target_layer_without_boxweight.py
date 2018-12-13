@@ -41,12 +41,15 @@ def anchor_target_layer(
     labels = np.empty((len(inds_inside),), dtype=np.float32)
     labels.fill(-1)
 
+
+    #Here is the key code in faster rcnn
     # overlaps between the anchors and the gt boxes
     overlaps = bbox_overlaps(
         np.ascontiguousarray(anchors, dtype=np.float),
         np.ascontiguousarray(gt_boxes, dtype=np.float))
 
     argmax_overlaps = overlaps.argmax(axis=1)
+    #search along row
     max_overlaps = overlaps[np.arange(len(inds_inside)), argmax_overlaps]
     gt_argmax_overlaps = overlaps.argmax(axis=0)
     gt_max_overlaps = overlaps[

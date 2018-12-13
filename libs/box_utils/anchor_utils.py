@@ -21,6 +21,9 @@ def make_anchors(base_anchor_size, anchor_scales, anchor_ratios,
         ws, hs = enum_ratios(enum_scales(base_anchor, anchor_scales),
                              anchor_ratios)  # per locations ws and hs
 
+
+        #this will get the center of anothers
+        # it consisant in feature map however inconstant in raw image
         x_centers = tf.range(featuremap_width, dtype=tf.float32) * stride
         y_centers = tf.range(featuremap_height, dtype=tf.float32) * stride
 

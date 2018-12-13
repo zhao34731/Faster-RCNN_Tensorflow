@@ -24,10 +24,11 @@ from libs.detection_oprations.proposal_target_layer import proposal_target_layer
 class DetectionNetwork(object):
 
     def __init__(self, base_network_name, is_training):
-
+    #the basic network used , training or testing , several anchors per_location
         self.base_network_name = base_network_name
         self.is_training = is_training
         self.num_anchors_per_location = len(cfgs.ANCHOR_SCALES) * len(cfgs.ANCHOR_RATIOS)
+
 
     def build_base_network(self, input_img_batch):
 
@@ -300,8 +301,9 @@ class DetectionNetwork(object):
             }
         return loss_dict
 
+    # _____________________________________________________________________________________________build whole network
     def build_whole_detection_network(self, input_img_batch, gtboxes_batch):
-
+    #the input to network is image_batch and gt_boxes_batch
         if self.is_training:
             # ensure shape is [M, 5]
             gtboxes_batch = tf.reshape(gtboxes_batch, [-1, 5])
@@ -309,8 +311,9 @@ class DetectionNetwork(object):
 
         img_shape = tf.shape(input_img_batch)
 
-        # 1. build base network
+        # 1. build base network to extract feature maps over whole images
         feature_to_cropped = self.build_base_network(input_img_batch)
+
 
         # 2. build rpn
         with tf.variable_scope('build_rpn',
@@ -325,6 +328,7 @@ class DetectionNetwork(object):
                                         trainable=self.is_training, weights_initializer=cfgs.INITIALIZER,
                                         activation_fn=None,
                                         scope='rpn_cls_score')
+            #use 1x1 conv to stride to whole image and genertate anochers*2's feature  2 means whether is background or object
             rpn_box_pred = slim.conv2d(rpn_conv3x3, self.num_anchors_per_location*4, [1, 1], stride=1,
                                        trainable=self.is_training, weights_initializer=cfgs.BBOX_INITIALIZER,
                                        activation_fn=None,
@@ -371,13 +375,14 @@ class DetectionNetwork(object):
                                                                         boxes=rois,
                                                                         scores=roi_scores)
                 tf.summary.image('all_rpn_rois', rois_in_img)
-
+                #this will return the locations of roi_scores greater then threshold
                 score_gre_05 = tf.reshape(tf.where(tf.greater_equal(roi_scores, 0.5)), [-1])
                 score_gre_05_rois = tf.gather(rois, score_gre_05)
                 score_gre_05_score = tf.gather(roi_scores, score_gre_05)
                 score_gre_05_in_img = show_box_in_tensor.draw_boxes_with_scores(img_batch=input_img_batch,
                                                                                 boxes=score_gre_05_rois,
                                                                                 scores=score_gre_05_score)
+                #after apply threshold, paint the rois in images
                 tf.summary.image('score_greater_05_rois', score_gre_05_in_img)
             # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -401,7 +406,7 @@ class DetectionNetwork(object):
             acc = tf.reduce_mean(tf.to_float(tf.equal(rpn_cls_category, tf.to_int64(tf.gather(rpn_labels, kept_rpppn)))))
             tf.summary.scalar('ACC/rpn_accuracy', acc)
 
-            with tf.control_dependencies([rpn_labels]):
+            with tf.control_dependencies([rpn_labels]): #defint the former and later execute indexs
                 with tf.variable_scope('sample_RCNN_minibatch'):
                     rois, labels, bbox_targets = \
                     tf.py_func(proposal_target_layer,

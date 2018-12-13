@@ -84,13 +84,15 @@ def resnet_base(img_batch, scope_name, is_training=True):
             # for images of different sizes: sometimes 0, sometimes 1
             net = resnet_utils.conv2d_same(
                 img_batch, 64, 7, stride=2, scope='conv1')
+            #here kernel size = 7 filter numbers = 64
+            # tf.pad will padding zero to in different diminsion from inner to outer diminsion
             net = tf.pad(net, [[0, 0], [1, 1], [1, 1], [0, 0]])
             net = slim.max_pool2d(
                 net, [3, 3], stride=2, padding='VALID', scope='pool1')
 
     not_freezed = [False] * cfgs.FIXED_BLOCKS + (4-cfgs.FIXED_BLOCKS)*[True]
     # Fixed_Blocks can be 1~3
-
+    # not_freezed will determine wheter to training inner blocks
     with slim.arg_scope(resnet_arg_scope(is_training=(is_training and not_freezed[0]))):
         C2, _ = resnet_v1.resnet_v1(net,
                                     blocks[0:1],
