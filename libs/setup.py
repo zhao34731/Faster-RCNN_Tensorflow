@@ -36,8 +36,8 @@ def locate_cuda():
     """
 
     # first check if the CUDAHOME env variable is in use
-    if 'CUDAHOME' in os.environ:
-        home = os.environ['CUDAHOME']
+    if 'CUDA_HOME' in os.environ:
+        home = os.environ['CUDA_HOME']
         nvcc = pjoin(home, 'bin', 'nvcc')
     else:
         # otherwise, search the PATH for NVCC
@@ -51,7 +51,7 @@ def locate_cuda():
     cudaconfig = {'home':home, 'nvcc':nvcc,
                   'include': pjoin(home, 'include'),
                   'lib64': pjoin(home, 'lib64')}
-    for k, v in cudaconfig.iteritems():
+    for k, v in cudaconfig.items():
         if not os.path.exists(v):
             raise EnvironmentError('The CUDA %s path could not be located in %s' % (k, v))
 
@@ -112,12 +112,12 @@ class custom_build_ext(build_ext):
 
 
 ext_modules = [
-    # Extension(
-    #     "utils.cython_bbox",
-    #     ["utils/bbox.pyx"],
-    #     extra_compile_args={'gcc': ["-Wno-cpp", "-Wno-unused-function"]},
-    #     include_dirs = [numpy_include]
-    # ),
+    Extension(
+        "utils.cython_bbox",
+        ["utils/bbox.pyx"],
+        extra_compile_args={'gcc': ["-Wno-cpp", "-Wno-unused-function"]},
+        include_dirs = [numpy_include]
+    ),
     # Extension(
     #     "nms.cpu_nms",
     #     ["nms/cpu_nms.pyx"],
@@ -139,23 +139,23 @@ ext_modules = [
     #     include_dirs = [numpy_include]
     # ),
     #
-    # Extension('nms.gpu_nms',
-    #     ['nms/nms_kernel.cu', 'nms/gpu_nms.pyx'],
-    #     library_dirs=[CUDA['lib64']],
-    #     libraries=['cudart'],
-    #     language='c++',
-    #     runtime_library_dirs=[CUDA['lib64']],
-    #     # this syntax is specific to this build system
-    #     # we're only going to use certain compiler args with nvcc and not with
-    #     # gcc the implementation of this trick is in customize_compiler() below
-    #     extra_compile_args={'gcc': ["-Wno-unused-function"],
-    #                         'nvcc': ['-arch=sm_35',
-    #                                  '--ptxas-options=-v',
-    #                                  '-c',
-    #                                  '--compiler-options',
-    #                                  "'-fPIC'"]},
-    #     include_dirs = [numpy_include, CUDA['include']]
-    # ),
+    Extension('nms.gpu_nms',
+        ['nms/nms_kernel.cu', 'nms/gpu_nms.pyx'],
+        library_dirs=[CUDA['lib64']],
+        libraries=['cudart'],
+        language='c++',
+        runtime_library_dirs=[CUDA['lib64']],
+        # this syntax is specific to this build system
+        # we're only going to use certain compiler args with nvcc and not with
+        # gcc the implementation of this trick is in customize_compiler() below
+        extra_compile_args={'gcc': ["-Wno-unused-function"],
+                             'nvcc': ['-arch=sm_35',
+                                     '--ptxas-options=-v',
+                                     '-c',
+                                      '--compiler-options',
+                                     "'-fPIC'"]},
+         include_dirs = [numpy_include, CUDA['include']]
+     ),
     # Extension('rotation.rotate_gpu_nms',
     #     ['rotation/rotate_nms_kernel.cu', 'rotation/rotate_gpu_nms.pyx'],
     #     library_dirs=[CUDA['lib64']],
@@ -173,23 +173,23 @@ ext_modules = [
     #                                  "'-fPIC'"]},
     #     include_dirs = [numpy_include, CUDA['include']]
     # ),
-    Extension('rotation.rbbox_overlaps',
-        ['rotation/rbbox_overlaps_kernel.cu', 'rotation/rbbox_overlaps.pyx'],
-        library_dirs=[CUDA['lib64']],
-        libraries=['cudart'],
-        language='c++',
-        runtime_library_dirs=[CUDA['lib64']],
+    #Extension('rotation.rbbox_overlaps',
+    #    ['rotation/rbbox_overlaps_kernel.cu', 'rotation/rbbox_overlaps.pyx'],
+    #    library_dirs=[CUDA['lib64']],
+     #   libraries=['cudart'],
+     #   language='c++',
+     #   runtime_library_dirs=[CUDA['lib64']],
         # this syntax is specific to this build system
         # we're only going to use certain compiler args with nvcc and not with
         # gcc the implementation of this trick is in customize_compiler() below
-        extra_compile_args={'gcc': ["-Wno-unused-function"],
-                            'nvcc': ['-arch=sm_35',
-                                     '--ptxas-options=-v',
-                                     '-c',
-                                     '--compiler-options',
-                                     "'-fPIC'"]},
-        include_dirs = [numpy_include, CUDA['include']]
-    ),
+      #  extra_compile_args={'gcc': ["-Wno-unused-function"],
+    #                     'nvcc': ['-arch=sm_35',
+    #                                '--ptxas-options=-v',
+    #                                '-c',
+    #                                '--compiler-options',
+    #                                "'-fPIC'"]},
+    #   include_dirs = [numpy_include, CUDA['include']]
+   # ),
     # Extension('rotation.rotate_polygon_nms',
     #     ['rotation/rotate_polygon_nms_kernel.cu', 'rotation/rotate_polygon_nms.pyx'],
     #     library_dirs=[CUDA['lib64']],
@@ -208,13 +208,13 @@ ext_modules = [
     #     include_dirs = [numpy_include, CUDA['include']]
     # ),
     #
-    # Extension(
-    #     'pycocotools._mask',
-    #     sources=['pycocotools/maskApi.c', 'pycocotools/_mask.pyx'],
-    #     include_dirs = [numpy_include, 'pycocotools'],
-    #     extra_compile_args={
-    #         'gcc': ['-Wno-cpp', '-Wno-unused-function', '-std=c99']},
-    # ),
+    Extension(
+         'pycocotools._mask',
+          sources=['pycocotools/maskApi.c', 'pycocotools/_mask.pyx'],
+          include_dirs = [numpy_include, 'pycocotools'],
+          extra_compile_args={
+              'gcc': ['-Wno-cpp', '-Wno-unused-function', '-std=c99']},
+      ),
 ]
 
 setup(
