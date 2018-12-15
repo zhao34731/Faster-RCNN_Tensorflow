@@ -33,9 +33,9 @@ def _smooth_l1_loss_base(bbox_pred, bbox_targets, sigma=1.0):
 def smooth_l1_loss_rpn(bbox_pred, bbox_targets, label, sigma=1.0):
     '''
 
-    :param bbox_pred: [-1, 4]
-    :param bbox_targets: [-1, 4]
-    :param label: [-1]
+    :param bbox_pred: [-1, 4]  all encode rois  every feature map location with 9 anchors
+    :param bbox_targets: [-1, 4]   all anchors t matrix computed by gt_boxes
+    :param label: [-1]   define all anchors pos or negative 
     :param sigma:
     :return:
     '''
