@@ -62,7 +62,6 @@ class DetectionNetwork(object):
             allclasses_scores = []
             categories = []
             for i in range(1, cfgs.CLASS_NUM+1):
-
                 # 1. decode boxes in each class
                 tmp_encoded_box = bbox_pred_list[i]
                 tmp_score = score_list[i]
@@ -76,16 +75,26 @@ class DetectionNetwork(object):
                 # 2. clip to img boundaries
                 tmp_decoded_boxes = boxes_utils.clip_boxes_to_img_boundaries(decode_boxes=tmp_decoded_boxes,
                                                                              img_shape=img_shape)
+                if cfgs.FILTERED_SCORE:
+                    indices = tf.reshape(tf.where(tf.greater(tmp_score, cfgs.FILTERED_SCORE)), [-1, ])
+                    filtered_boxes = tf.gather(tmp_decoded_boxes, indices)
+                    filtered_scores = tf.gather(tmp_score, indices)
 
+                    # perform NMS
+                    ymin = filtered_boxes[:, 0]
+                    xmin = filtered_boxes[:, 1]
+                    ymax = filtered_boxes[:, 2]
+                    xmax = filtered_boxes[:, 3]
+                    filtered_boxes = tf.transpose(tf.stack([ymin, xmin, ymax, xmax]))
                 # 3. NMS
                 keep = tf.image.non_max_suppression(
-                    boxes=tmp_decoded_boxes,
-                    scores=tmp_score,
+                    boxes=filtered_boxes,
+                    scores = filtered_scores,
                     max_output_size=cfgs.FAST_RCNN_NMS_MAX_BOXES_PER_CLASS,
                     iou_threshold=cfgs.FAST_RCNN_NMS_IOU_THRESHOLD)
 
-                perclass_boxes = tf.gather(tmp_decoded_boxes, keep)
-                perclass_scores = tf.gather(tmp_score, keep)
+                perclass_boxes = tf.gather(filtered_boxes, keep)
+                perclass_scores = tf.gather(filtered_scores, keep)
 
                 allclasses_boxes.append(perclass_boxes)
                 allclasses_scores.append(perclass_scores)
@@ -137,10 +146,17 @@ class DetectionNetwork(object):
                                                             crop_size=[cfgs.ROI_SIZE, cfgs.ROI_SIZE],
                                                             name='CROP_AND_RESIZE'
                                                             )
+            if self.is_training:
+                mask = tf.random_normal((cfgs.ROI_SIZE,cfgs.ROI_SIZE),0,1)
+                # if the mask is 1 , enable_feature. if the mask is 0 , the feature in the location will be dropped
+                mask_out = tf.expand_dims(tf.to_float(tf.greater(mask,cfgs.MASK_THRESH)),axis= -1)
+                mask_out_expand = tf.tile(mask_out,(1,1,cropped_roi_features.get_shape().as_list()[-1]))
+                cropped_roi_features = tf.multiply(cropped_roi_features,mask_out_expand)
+
             roi_features = slim.max_pool2d(cropped_roi_features,
                                            [cfgs.ROI_POOL_KERNEL_SIZE, cfgs.ROI_POOL_KERNEL_SIZE],
                                            stride=cfgs.ROI_POOL_KERNEL_SIZE)
-
+            # roi features is [7 7]
         return roi_features
 
     def build_fastrcnn(self, feature_to_cropped, rois, img_shape):
@@ -365,8 +381,12 @@ class DetectionNetwork(object):
                                                          is_training=self.is_training)
             # rois shape [-1, 4]
             # +++++++++++++++++++++++++++++++++++++add img smry+++++++++++++++++++++++++++++++++++++++++++++++++++++++
+            rois_in_img = show_box_in_tensor.draw_boxes_with_scores(img_batch=input_img_batch,
+                                                                    boxes=rois,
+                                                                    scores=roi_scores)
 
-            if self.is_training:
+
+            if  self.is_training:
                 rois_in_img = show_box_in_tensor.draw_boxes_with_scores(img_batch=input_img_batch,
                                                                         boxes=rois,
                                                                         scores=roi_scores)
@@ -434,7 +454,8 @@ class DetectionNetwork(object):
 
         #  6. postprocess_fastrcnn
         if not self.is_training:
-            return self.postprocess_fastrcnn(rois=rois, bbox_ppred=bbox_pred, scores=cls_prob, img_shape=img_shape)
+            final_bbox, final_scores, final_category = self.postprocess_fastrcnn(rois=rois, bbox_ppred=bbox_pred, scores=cls_prob, img_shape=img_shape)
+            return final_bbox, final_scores, final_category
         else:
             '''
             when trian. We need build Loss
@@ -455,8 +476,9 @@ class DetectionNetwork(object):
             return final_bbox, final_scores, final_category, loss_dict
 
     def get_restorer(self):
+        print(os.path.join(cfgs.TRAINED_CKPT, cfgs.VERSION))
         checkpoint_path = tf.train.latest_checkpoint(os.path.join(cfgs.TRAINED_CKPT, cfgs.VERSION))
-
+        print(checkpoint_path)
         if checkpoint_path != None:
             if cfgs.RESTORE_FROM_RPN:
                 print('___restore from rpn___')

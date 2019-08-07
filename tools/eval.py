@@ -28,8 +28,7 @@ def eval_with_plac(det_net, real_test_imgname_list, img_root, draw_imgs=False):
     img_batch = tf.cast(img_plac, tf.float32)
 
     img_batch = short_side_resize_for_inference_data(img_tensor=img_batch,
-                                                     target_shortside_len=cfgs.IMG_SHORT_SIDE_LEN,
-                                                     length_limitation=cfgs.IMG_MAX_LENGTH)
+                                                     target_shortside_len=cfgs.IMG_SHORT_SIDE_LEN)
     img_batch = img_batch - tf.constant(cfgs.PIXEL_MEAN)
     img_batch = tf.expand_dims(img_batch, axis=0)
 
@@ -55,15 +54,16 @@ def eval_with_plac(det_net, real_test_imgname_list, img_root, draw_imgs=False):
 
         all_boxes = []
         for i, a_img_name in enumerate(real_test_imgname_list):
-
-            raw_img = cv2.imread(os.path.join(img_root, a_img_name))
+            print(a_img_name)
+            raw_img = cv2.imread(os.path.join(img_root, a_img_name),0)
+            raw_img = cv2.cvtColor(raw_img,cv2.COLOR_GRAY2RGB)
             raw_h, raw_w = raw_img.shape[0], raw_img.shape[1]
 
             start = time.time()
             resized_img, detected_boxes, detected_scores, detected_categories = \
                 sess.run(
                     [img_batch, detection_boxes, detection_scores, detection_category],
-                    feed_dict={img_plac: raw_img[:, :, ::-1]}  # cv is BGR. But need RGB
+                    feed_dict={img_plac: raw_img}  # cv is BGR. But need RGB
                 )
             end = time.time()
             # print("{} cost time : {} ".format(img_name, (end - start)))
@@ -104,7 +104,7 @@ def eval_with_plac(det_net, real_test_imgname_list, img_root, draw_imgs=False):
         save_dir = os.path.join(cfgs.EVALUATE_DIR, cfgs.VERSION)
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
-        fw1 = open(os.path.join(save_dir, 'detections.pkl'), 'w')
+        fw1 = open(os.path.join(save_dir, 'detections.pkl'), 'wb')
         pickle.dump(all_boxes, fw1)
 
 
@@ -116,6 +116,7 @@ def eval(num_imgs, eval_dir, annotation_dir, showbox):
 
     test_imgname_list = [item for item in os.listdir(eval_dir)
                               if item.endswith(('.jpg', 'jpeg', '.png', '.tif', '.tiff'))]
+
     if num_imgs == np.inf:
         real_test_imgname_list = test_imgname_list
     else:
@@ -130,10 +131,8 @@ def eval(num_imgs, eval_dir, annotation_dir, showbox):
     save_dir = os.path.join(cfgs.EVALUATE_DIR, cfgs.VERSION)
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
-    with open(os.path.join(save_dir, 'detections.pkl')) as f:
+    with open(os.path.join(save_dir, 'detections.pkl'),'rb') as f:
         all_boxes = pickle.load(f)
-
-        print(len(all_boxes))
 
     voc_eval.voc_evaluate_detections(all_boxes=all_boxes,
                                      test_annotation_path=annotation_dir,
@@ -145,13 +144,13 @@ def parse_args():
 
     parser.add_argument('--eval_imgs', dest='eval_imgs',
                         help='evaluate imgs dir ',
-                        default='/home/yjr/DataSet/VOC/VOC_test/VOC2007/JPEGImages', type=str)
+                        default='/media/E/Develop/Projects/detection/RetinaNet_Tensorflow/data/GF_data/testsets_05/JPEGImages', type=str)
     parser.add_argument('--annotation_dir', dest='test_annotation_dir',
                         help='the dir save annotations',
-                        default='/home/yjr/DataSet/VOC/VOC_test/VOC2007/Annotations', type=str)
+                        default='/media/E/Develop/Projects/detection/RetinaNet_Tensorflow/data/GF_data/testsets_05/Annotations', type=str)
     parser.add_argument('--showbox', dest='showbox',
                         help='whether show detecion results when evaluation',
-                        default=False, type=bool)
+                        default=True, type=bool)
     parser.add_argument('--GPU', dest='GPU',
                         help='gpu id',
                         default='0', type=str)

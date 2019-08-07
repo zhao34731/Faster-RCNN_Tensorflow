@@ -9,7 +9,7 @@ from libs.configs import cfgs
 from tensorflow.contrib.slim.nets import resnet_v1
 from tensorflow.contrib.slim.nets import resnet_utils
 from tensorflow.contrib.slim.python.slim.nets.resnet_v1 import resnet_v1_block
-# import tfplot as tfp
+import tfplot as tfp
 
 def resnet_arg_scope(
         is_training=True, weight_decay=cfgs.WEIGHT_DECAY, batch_norm_decay=0.997,
@@ -39,22 +39,22 @@ def resnet_arg_scope(
             return arg_sc
 
 
-# def add_heatmap(feature_maps, name):
-#     '''
-#
-#     :param feature_maps:[B, H, W, C]
-#     :return:
-#     '''
-#
-#     def figure_attention(activation):
-#         fig, ax = tfp.subplots()
-#         im = ax.imshow(activation, cmap='jet')
-#         fig.colorbar(im)
-#         return fig
-#
-#     heatmap = tf.reduce_sum(feature_maps, axis=-1)
-#     heatmap = tf.squeeze(heatmap, axis=0)
-#     tfp.summary.plot(name, figure_attention, [heatmap])
+def add_heatmap(feature_maps, name):
+    '''
+
+    :param feature_maps:[B, H, W, C]
+    :return:
+    '''
+
+    def figure_attention(activation):
+        fig, ax = tfp.subplots()
+        im = ax.imshow(activation, cmap='jet')
+        fig.colorbar(im)
+        return fig
+
+    heatmap = tf.reduce_sum(feature_maps, axis=-1)
+    heatmap = tf.squeeze(heatmap, axis=0)
+    tfp.summary.plot(name, figure_attention, [heatmap])
 
 
 def resnet_base(img_batch, scope_name, is_training=True):
@@ -99,7 +99,7 @@ def resnet_base(img_batch, scope_name, is_training=True):
                                     scope=scope_name)
 
     # C2 = tf.Print(C2, [tf.shape(C2)], summarize=10, message='C2_shape')
-    # add_heatmap(C2, 'Layer/C2')
+    #add_heatmap(C2, 'Layer/C2')
 
     with slim.arg_scope(resnet_arg_scope(is_training=(is_training and not_freezed[1]))):
         C3, _ = resnet_v1.resnet_v1(C2,
@@ -107,7 +107,7 @@ def resnet_base(img_batch, scope_name, is_training=True):
                                     global_pool=False,
                                     include_root_block=False,
                                     scope=scope_name)
-    # add_heatmap(C3, name='Layer/C3')
+    #add_heatmap(C3, name='Layer/C3')
     # C3 = tf.Print(C3, [tf.shape(C3)], summarize=10, message='C3_shape')
 
     with slim.arg_scope(resnet_arg_scope(is_training=(is_training and not_freezed[2]))):
@@ -116,7 +116,7 @@ def resnet_base(img_batch, scope_name, is_training=True):
                                     global_pool=False,
                                     include_root_block=False,
                                     scope=scope_name)
-    # add_heatmap(C4, name='Layer/C4')
+    #add_heatmap(C4, name='Layer/C4')
     # C4 = tf.Print(C4, [tf.shape(C4)], summarize=10, message='C4_shape')
     return C4
 

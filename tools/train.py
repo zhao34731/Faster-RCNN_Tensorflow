@@ -31,6 +31,8 @@ def train():
                        batch_size=cfgs.BATCH_SIZE,
                        shortside_len=cfgs.IMG_SHORT_SIDE_LEN,
                        is_training=True)
+
+
         gtboxes_and_label = tf.reshape(gtboxes_and_label_batch, [-1, 5])
 
     biases_regularizer = tf.no_regularizer
@@ -42,6 +44,8 @@ def train():
                         weights_regularizer=weights_regularizer,
                         biases_regularizer=biases_regularizer,
                         biases_initializer=tf.constant_initializer(0.0)):
+
+
         final_bbox, final_scores, final_category, loss_dict = faster_rcnn.build_whole_detection_network(
             input_img_batch=img_batch,
             gtboxes_batch=gtboxes_and_label)
@@ -121,13 +125,14 @@ def train():
     saver = tf.train.Saver(max_to_keep=30)
 
     config = tf.ConfigProto()
-    config.gpu_options.allow_growth = True
-
+    # config.gpu_options.allow_growth = True
+    config.gpu_options.per_process_gpu_memory_fraction = 0.45
     with tf.Session(config=config) as sess:
         sess.run(init_op)
         if not restorer is None:
             restorer.restore(sess, restore_ckpt)
             print('restore model')
+
         coord = tf.train.Coordinator()
         threads = tf.train.start_queue_runners(sess, coord)
 
@@ -146,13 +151,11 @@ def train():
             else:
                 if step % cfgs.SHOW_TRAIN_INFO_INTE == 0 and step % cfgs.SMRY_ITER != 0:
                     start = time.time()
-
                     _, global_stepnp, img_name, rpnLocLoss, rpnClsLoss, rpnTotalLoss, \
                     fastrcnnLocLoss, fastrcnnClsLoss, fastrcnnTotalLoss, totalLoss = \
                         sess.run(
                             [train_op, global_step, img_name_batch, rpn_location_loss, rpn_cls_loss, rpn_total_loss,
                              fastrcnn_loc_loss, fastrcnn_cls_loss, fastrcnn_total_loss, total_loss])
-
                     end = time.time()
                     print(""" {}: step{}    image_name:{} |\t
                               rpn_loc_loss:{} |\t rpn_cla_loss:{} |\t rpn_total_loss:{} |

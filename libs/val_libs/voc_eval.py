@@ -53,7 +53,7 @@ def parse_rec(filename):
   for obj in tree.findall('object'):
     obj_struct = {}
     obj_struct['name'] = obj.find('name').text
-    obj_struct['pose'] = obj.find('pose').text
+    # obj_struct['pose'] = obj.find('pose').text
     obj_struct['truncated'] = int(obj.find('truncated').text)
     obj_struct['difficult'] = int(obj.find('difficult').text)
     bbox = obj.find('bndbox')
@@ -218,7 +218,7 @@ def do_python_eval(test_imgid_list, test_annotation_path):
   AP_list = []
   import matplotlib.pyplot as plt
   import matplotlib.colors as colors
-  color_list = colors.cnames.keys()[::6]
+  color_list = list(colors.cnames.keys())[::6]
 
   for cls, index in NAME_LABEL_MAP.items():
     if cls == 'back_ground':

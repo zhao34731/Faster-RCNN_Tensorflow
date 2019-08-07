@@ -20,6 +20,7 @@ def _smooth_l1_loss_base(bbox_pred, bbox_targets, sigma=1.0):
     '''
     sigma_2 = sigma**2
 
+    #this all are
     box_diff = bbox_pred - bbox_targets
 
     abs_box_diff = tf.abs(box_diff)
@@ -33,9 +34,10 @@ def _smooth_l1_loss_base(bbox_pred, bbox_targets, sigma=1.0):
 def smooth_l1_loss_rpn(bbox_pred, bbox_targets, label, sigma=1.0):
     '''
 
-    :param bbox_pred: [-1, 4]  all encode rois  every feature map location with 9 anchors
+    :param bbox_pred: [-1, 4]      all encode rois  every feature map location with 9 anchors
+    #this is the RPN direct output
     :param bbox_targets: [-1, 4]   all anchors t matrix computed by gt_boxes
-    :param label: [-1]   define all anchors pos or negative 
+    :param label: [-1]             define all anchors pos or negative
     :param sigma:
     :return:
     '''
@@ -66,10 +68,11 @@ def smooth_l1_loss_rcnn(bbox_pred, bbox_targets, label, num_classes, sigma=1.0):
     '''
 
     outside_mask = tf.stop_gradient(tf.to_float(tf.greater(label, 0)))
-
+    #get label just rois_per_image
     bbox_pred = tf.reshape(bbox_pred, [-1, num_classes, 4])
     bbox_targets = tf.reshape(bbox_targets, [-1, num_classes, 4])
 
+    #every roi predict num_class' coordinations
     value = _smooth_l1_loss_base(bbox_pred,
                                  bbox_targets,
                                  sigma=sigma)
@@ -83,6 +86,7 @@ def smooth_l1_loss_rcnn(bbox_pred, bbox_targets, label, num_classes, sigma=1.0):
         tf.to_float(tf.reshape(inside_mask, [-1, num_classes])))
 
     normalizer = tf.to_float(tf.shape(bbox_pred)[0])
+    #all rois
     bbox_loss = tf.reduce_sum(
         tf.reduce_sum(value * inside_mask, 1)*outside_mask) / normalizer
 
@@ -113,7 +117,7 @@ def sum_ohem_loss(cls_score, label, bbox_pred, bbox_targets,
     value = _smooth_l1_loss_base(bbox_pred,
                                  bbox_targets,
                                  sigma=sigma)
-    value = tf.reduce_sum(value, 2)
+    value = tf.reduce_sum(value, 2)  #get every roi in every class 's total loss
     value = tf.reshape(value, [-1, num_classes])
 
     inside_mask = tf.one_hot(tf.reshape(label, [-1, 1]),

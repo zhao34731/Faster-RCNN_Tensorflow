@@ -51,13 +51,12 @@ def detect(det_net, inference_save_path, real_test_imgname_list):
             print('restore model')
 
         for i, a_img_name in enumerate(real_test_imgname_list):
-
-            raw_img = cv2.imread(a_img_name)
+            raw_img = cv2.imread(a_img_name)[:, :, ::-1]
             start = time.time()
             resized_img, detected_boxes, detected_scores, detected_categories = \
                 sess.run(
                     [img_batch, detection_boxes, detection_scores, detection_category],
-                    feed_dict={img_plac: raw_img[:, :, ::-1]}  # cv is BGR. But need RGB
+                    feed_dict={img_plac: raw_img}  # cv is BGR. But need RGB
                 )
             end = time.time()
             # print("{} cost time : {} ".format(img_name, (end - start)))
@@ -78,6 +77,7 @@ def detect(det_net, inference_save_path, real_test_imgname_list):
             detected_boxes = np.transpose(np.stack([xmin, ymin, xmax, ymax]))
 
             show_indices = detected_scores >= cfgs.SHOW_SCORE_THRSHOLD
+
             show_scores = detected_scores[show_indices]
             show_boxes = detected_boxes[show_indices]
             show_categories = detected_categories[show_indices]
@@ -119,10 +119,10 @@ def parse_args():
     parser.add_argument('--GPU', dest='GPU',
                         help='gpu id ',
                         default='0', type=str)
-
-    if len(sys.argv) == 1:
-        parser.print_help()
-        sys.exit(1)
+    #
+    # if len(sys.argv) == 1:
+    #     parser.print_help()
+    #     sys.exit(1)
 
     args = parser.parse_args()
 

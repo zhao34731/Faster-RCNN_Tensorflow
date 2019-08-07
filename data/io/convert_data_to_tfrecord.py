@@ -10,13 +10,13 @@ import cv2
 from libs.label_name_dict.label_dict import *
 from help_utils.tools import *
 
-tf.app.flags.DEFINE_string('VOC_dir', '/mnt/USBB/gx/DOTA/DOTA_TOTAL/', 'Voc dir')
-tf.app.flags.DEFINE_string('xml_dir', 'XML', 'xml dir')
-tf.app.flags.DEFINE_string('image_dir', 'IMG', 'image dir')
-tf.app.flags.DEFINE_string('save_name', 'train', 'save name')
-tf.app.flags.DEFINE_string('save_dir', '../tfrecord/', 'save name')
-tf.app.flags.DEFINE_string('img_format', '.png', 'format of image')
-tf.app.flags.DEFINE_string('dataset', 'DOTA_TOTAL', 'dataset')
+tf.app.flags.DEFINE_string('VOC_dir', '/media/G/dataset/terrasar_dataset/testsets/', 'Voc dir')
+tf.app.flags.DEFINE_string('xml_dir', 'Annotations', 'xml dir')
+tf.app.flags.DEFINE_string('image_dir', 'JPEGImages', 'image dir')
+tf.app.flags.DEFINE_string('save_name', 'test', 'save name')
+tf.app.flags.DEFINE_string('save_dir', '/media/G/dataset/terrasar_dataset/tfrecord/', 'save name')
+tf.app.flags.DEFINE_string('img_format', '.jpg', 'format of image')
+tf.app.flags.DEFINE_string('dataset', 'sar_plane', 'dataset')
 FLAGS = tf.app.flags.FLAGS
 
 
@@ -82,7 +82,6 @@ def convert_pascal_to_tfrecord():
     for count, xml in enumerate(glob.glob(xml_path + '/*.xml')):
         # to avoid path error in different development platform
         xml = xml.replace('\\', '/')
-
         img_name = xml.split('/')[-1].split('.')[0] + FLAGS.img_format
         img_path = image_path + '/' + img_name
 
@@ -94,11 +93,10 @@ def convert_pascal_to_tfrecord():
 
         # img = np.array(Image.open(img_path))
         img = cv2.imread(img_path)[:, :, ::-1]
-
         feature = tf.train.Features(feature={
             # do not need encode() in linux
             # 'img_name': _bytes_feature(img_name.encode()),
-            'img_name': _bytes_feature(img_name),
+            'img_name': _bytes_feature(img_name.encode()),
             'img_height': _int64_feature(img_height),
             'img_width': _int64_feature(img_width),
             'img': _bytes_feature(img.tostring()),
